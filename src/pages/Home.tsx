@@ -4,10 +4,12 @@ import FilterPanel from '../components/FilterPanel';
 import VisualizationPanel from '../components/VisualizationPanel';
 import MemoryCard from '../components/MemoryCard';
 import MemoryModal from '../components/MemoryModal';
+import ReviewModal from '../components/ReviewModal';
 import { useMemoryStore } from '../store/memoryStore';
 import type { Filters } from '../utils/helpers';
 import { filterMemories } from '../utils/helpers';
 import type { SmellMemory } from '../utils/constants';
+import { getReviewStatus } from '../utils/constants';
 import type { MemoryInput } from '../store/memoryStore';
 import { BookOpenCheck } from 'lucide-react';
 
@@ -23,10 +25,17 @@ export default function Home() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<SmellMemory | null>(null);
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const [reviewMemoryId, setReviewMemoryId] = useState<string | null>(null);
 
   useEffect(() => {
     initIfEmpty();
   }, [initIfEmpty]);
+
+  const pendingCount = useMemo(
+    () => memories.filter((m) => getReviewStatus(m) === 'pending').length,
+    [memories],
+  );
 
   const filteredMemories = useMemo(
     () => filterMemories(memories, filters),
@@ -40,6 +49,11 @@ export default function Home() {
 
   const openAddModal = () => { setEditing(null); setModalOpen(true); };
   const openEditModal = (m: SmellMemory) => { setEditing(m); setModalOpen(true); };
+
+  const openReview = (id?: string) => {
+    setReviewMemoryId(id ?? null);
+    setReviewOpen(true);
+  };
 
   const handleSubmit = (data: MemoryInput) => {
     if (editing) {
@@ -68,7 +82,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen">
-      <Header onAdd={openAddModal} memoryCount={memories.length} />
+      <Header onAdd={openAddModal} memoryCount={memories.length} pendingCount={pendingCount} />
 
       <main className="container max-w-6xl pb-20">
         <FilterPanel
@@ -126,6 +140,7 @@ export default function Home() {
                     onToggle={() => setExpandedId(expandedId === m.id ? null : m.id)}
                     onEdit={() => openEditModal(m)}
                     onDelete={() => handleDelete(m.id)}
+                    onReview={() => openReview(m.id)}
                   />
                 </div>
               ))}
@@ -143,6 +158,13 @@ export default function Home() {
         onClose={() => setModalOpen(false)}
         onSubmit={handleSubmit}
         editingData={editing}
+      />
+
+      <ReviewModal
+        isOpen={reviewOpen}
+        memories={memories}
+        initialMemoryId={reviewMemoryId}
+        onClose={() => setReviewOpen(false)}
       />
     </div>
   );

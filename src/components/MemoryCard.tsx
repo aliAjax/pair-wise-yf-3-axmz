@@ -1,7 +1,7 @@
 import type { SmellMemory } from '../utils/constants';
-import { getSeasonInfo, getSmellTypeInfo, getEmotionInfo } from '../utils/constants';
+import { getSeasonInfo, getSmellTypeInfo, getEmotionInfo, getReviewStatus, getReviewRecords, REVIEW_REASON_LABELS } from '../utils/constants';
 import { formatDate, contrastTextColor } from '../utils/helpers';
-import { Pencil, Trash2, ChevronDown, ChevronUp, Heart } from 'lucide-react';
+import { Pencil, Trash2, ChevronDown, ChevronUp, Heart, FlaskConical, AlertCircle, Archive } from 'lucide-react';
 
 interface Props {
   memory: SmellMemory;
@@ -10,12 +10,16 @@ interface Props {
   onToggle: () => void;
   onEdit: () => void;
   onDelete: () => void;
+  onReview: () => void;
 }
 
-export default function MemoryCard({ memory, index, isExpanded, onToggle, onEdit, onDelete }: Props) {
+export default function MemoryCard({ memory, index, isExpanded, onToggle, onEdit, onDelete, onReview }: Props) {
   const season = getSeasonInfo(memory.season);
   const stype = getSmellTypeInfo(memory.smell_type);
   const emotion = getEmotionInfo(memory.emotion);
+  const reviewStatus = getReviewStatus(memory);
+  const isPending = reviewStatus === 'pending';
+  const latestRecord = getReviewRecords(memory).at(-1);
 
   const intensityWidth = `${memory.intensity * 10}%`;
   const humidityWidth = `${memory.humidity * 10}%`;
@@ -79,7 +83,17 @@ export default function MemoryCard({ memory, index, isExpanded, onToggle, onEdit
                   <Heart className="w-3 h-3 fill-current" /> 想再闻
                 </span>
               )}
+              <span className={`scent-tag ${isPending ? 'bg-brick-500/10 text-brick-600' : 'bg-moss-100 text-moss-600'}`}>
+                {isPending ? <AlertCircle className="w-3 h-3" /> : <Archive className="w-3 h-3" />}
+                {isPending ? '待复核' : '已封存'}
+              </span>
             </div>
+
+            {isPending && latestRecord && (
+              <div className="mb-3 rounded-lg bg-brick-500/5 border border-brick-400/30 px-2.5 py-1.5 text-[11px] text-brick-600">
+                封存已撤销：{latestRecord.reasons.map((r) => REVIEW_REASON_LABELS[r]).join('；')}
+              </div>
+            )}
 
             <div className="space-y-1.5">
               <div>
@@ -147,6 +161,16 @@ export default function MemoryCard({ memory, index, isExpanded, onToggle, onEdit
                 </div>
                 <div className="flex items-center gap-1">
                   <button
+                    onClick={(e) => { e.stopPropagation(); onReview(); }}
+                    className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs transition-colors ${
+                      isPending
+                        ? 'text-moss-600 hover:bg-moss-100'
+                        : 'text-lavender-600 hover:bg-lavender-300/20'
+                    }`}
+                  >
+                    <FlaskConical className="w-3.5 h-3.5" /> {isPending ? '补齐复嗅' : '复嗅'}
+                  </button>
+                  <button
                     onClick={(e) => { e.stopPropagation(); onEdit(); }}
                     className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs text-ochre-600 hover:bg-ochre-100 transition-colors"
                   >
@@ -165,6 +189,15 @@ export default function MemoryCard({ memory, index, isExpanded, onToggle, onEdit
 
           {!isExpanded && (
             <div className="px-4 pb-3 flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 -mt-1">
+              <button
+                onClick={(e) => { e.stopPropagation(); onReview(); }}
+                title={isPending ? '补齐复嗅' : '登记复嗅'}
+                className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs transition-colors ${
+                  isPending ? 'text-moss-600 hover:bg-moss-100' : 'text-lavender-600 hover:bg-lavender-300/20'
+                }`}
+              >
+                <FlaskConical className="w-3.5 h-3.5" />
+              </button>
               <button
                 onClick={(e) => { e.stopPropagation(); onEdit(); }}
                 className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs text-ochre-600 hover:bg-ochre-100 transition-colors"
