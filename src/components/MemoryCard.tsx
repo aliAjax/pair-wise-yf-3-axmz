@@ -1,7 +1,8 @@
 import type { SmellMemory } from '../utils/constants';
-import { getSeasonInfo, getSmellTypeInfo, getEmotionInfo } from '../utils/constants';
+import { getSeasonInfo, getSmellTypeInfo, getEmotionInfo, REVIEW_REASON_INFO } from '../utils/constants';
 import { formatDate, contrastTextColor } from '../utils/helpers';
-import { Pencil, Trash2, ChevronDown, ChevronUp, Heart } from 'lucide-react';
+import { latestReview } from '../utils/review';
+import { Pencil, Trash2, ChevronDown, ChevronUp, Heart, FlaskConical, Lock, Hourglass } from 'lucide-react';
 
 interface Props {
   memory: SmellMemory;
@@ -10,25 +11,30 @@ interface Props {
   onToggle: () => void;
   onEdit: () => void;
   onDelete: () => void;
+  onReview: () => void;
 }
 
-export default function MemoryCard({ memory, index, isExpanded, onToggle, onEdit, onDelete }: Props) {
+export default function MemoryCard({ memory, index, isExpanded, onToggle, onEdit, onDelete, onReview }: Props) {
   const season = getSeasonInfo(memory.season);
   const stype = getSmellTypeInfo(memory.smell_type);
   const emotion = getEmotionInfo(memory.emotion);
+  const pending = memory.status === 'pending_review';
+  const latest = latestReview(memory);
 
   const intensityWidth = `${memory.intensity * 10}%`;
   const humidityWidth = `${memory.humidity * 10}%`;
 
   return (
     <article
-      className="group relative bg-paper-50 rounded-2xl border border-paper-300 shadow-card overflow-hidden hover:shadow-paper-hover hover:-translate-y-1 transition-all duration-300 animate-fadeInUp"
+      className={`group relative bg-paper-50 rounded-2xl border shadow-card overflow-hidden hover:shadow-paper-hover hover:-translate-y-1 transition-all duration-300 animate-fadeInUp ${
+        pending ? 'border-brick-400/60' : 'border-paper-300'
+      }`}
       style={{ animationDelay: `${Math.min(index * 60, 600)}ms` }}
     >
       <div className="flex">
         <div
           className="w-2 shrink-0 relative overflow-hidden transition-all duration-300 group-hover:w-3"
-          style={{ backgroundColor: memory.color_association }}
+          style={{ backgroundColor: pending ? '#A0522D' : memory.color_association }}
         >
           <div className="absolute inset-0 opacity-30"
             style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.6) 0%, transparent 40%, rgba(0,0,0,0.15) 100%)' }} />
@@ -41,9 +47,23 @@ export default function MemoryCard({ memory, index, isExpanded, onToggle, onEdit
           >
             <div className="flex items-start justify-between gap-2 mb-2">
               <div className="min-w-0 flex-1">
-                <h3 className="font-serif text-xl font-semibold text-ink-800 leading-tight truncate">
-                  {memory.location}
-                </h3>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <h3 className="font-serif text-xl font-semibold text-ink-800 leading-tight truncate">
+                    {memory.location}
+                  </h3>
+                  {pending ? (
+                    <span
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-brick-500/15 text-brick-600 text-[10px] font-semibold border border-brick-400/40 shrink-0"
+                      title={latest ? latest.reasons.map((r) => REVIEW_REASON_INFO[r].desc).join('；') : ''}
+                    >
+                      <Hourglass className="w-3 h-3" /> 待复核
+                    </span>
+                  ) : (memory.reviews?.length ?? 0) > 0 ? (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-moss-100 text-moss-600 text-[10px] font-semibold border border-moss-200 shrink-0">
+                      <Lock className="w-3 h-3" /> 已复核
+                    </span>
+                  ) : null}
+                </div>
                 <p className="text-sm text-ink-700/70 mt-0.5 truncate">
                   <span className="mr-1" style={{ color: stype.color }}>{stype.emoji}</span>
                   {memory.source_guess}
@@ -80,6 +100,17 @@ export default function MemoryCard({ memory, index, isExpanded, onToggle, onEdit
                 </span>
               )}
             </div>
+
+            {pending && latest && (
+              <div className="mb-3 rounded-lg bg-brick-500/8 border border-brick-400/30 px-2.5 py-2">
+                <div className="text-[11px] font-medium text-brick-600">
+                  复核退回：{latest.reasons.map((r) => REVIEW_REASON_INFO[r].label).join('、')}
+                </div>
+                <div className="text-[10px] text-ink-700/55 mt-0.5">
+                  {formatDate(latest.reviewed_at)} 撤销封存，补齐一致结果后可重新封存
+                </div>
+              </div>
+            )}
 
             <div className="space-y-1.5">
               <div>
@@ -147,6 +178,16 @@ export default function MemoryCard({ memory, index, isExpanded, onToggle, onEdit
                 </div>
                 <div className="flex items-center gap-1">
                   <button
+                    onClick={(e) => { e.stopPropagation(); onReview(); }}
+                    className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs transition-colors ${
+                      pending
+                        ? 'text-brick-600 hover:bg-brick-500/10 font-semibold'
+                        : 'text-moss-600 hover:bg-moss-100'
+                    }`}
+                  >
+                    <FlaskConical className="w-3.5 h-3.5" /> {pending ? '补齐复嗅' : '复嗅'}
+                  </button>
+                  <button
                     onClick={(e) => { e.stopPropagation(); onEdit(); }}
                     className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs text-ochre-600 hover:bg-ochre-100 transition-colors"
                   >
@@ -165,6 +206,17 @@ export default function MemoryCard({ memory, index, isExpanded, onToggle, onEdit
 
           {!isExpanded && (
             <div className="px-4 pb-3 flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 -mt-1">
+              <button
+                onClick={(e) => { e.stopPropagation(); onReview(); }}
+                title={pending ? '补齐复嗅' : '复嗅登记'}
+                className={`inline-flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs transition-colors ${
+                  pending
+                    ? 'text-brick-600 hover:bg-brick-500/10'
+                    : 'text-moss-600 hover:bg-moss-100'
+                }`}
+              >
+                <FlaskConical className="w-3.5 h-3.5" />
+              </button>
               <button
                 onClick={(e) => { e.stopPropagation(); onEdit(); }}
                 className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs text-ochre-600 hover:bg-ochre-100 transition-colors"

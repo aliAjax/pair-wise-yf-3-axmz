@@ -34,8 +34,17 @@ export default function MemoryModal({ isOpen, onClose, onSubmit, editingData }: 
   useEffect(() => {
     if (isOpen) {
       if (editingData) {
-        const { id, created_at, updated_at, ...rest } = editingData;
+        const {
+          id,
+          created_at,
+          updated_at,
+          status,
+          reviews,
+          unsealed_at,
+          ...rest
+        } = editingData;
         void id; void created_at; void updated_at;
+        void status; void reviews; void unsealed_at;
         setForm(rest);
       } else {
         setForm(defaultForm);

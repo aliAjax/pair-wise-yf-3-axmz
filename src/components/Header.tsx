@@ -1,11 +1,47 @@
-import { Plus } from 'lucide-react';
+import { Plus, Archive, FlaskConical } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 interface Props {
-  onAdd: () => void;
+  onAdd?: () => void;
   memoryCount: number;
+  activeNav?: 'home' | 'review';
+  pendingCount?: number;
 }
 
-export default function Header({ onAdd, memoryCount }: Props) {
+function NavTab({
+  to,
+  active,
+  icon,
+  label,
+  badge,
+}: {
+  to: string;
+  active: boolean;
+  icon: React.ReactNode;
+  label: string;
+  badge?: number;
+}) {
+  return (
+    <Link
+      to={to}
+      className={`relative inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
+        active
+          ? 'bg-ochre-500 text-paper-50 shadow-paper'
+          : 'text-ink-700/70 hover:bg-paper-200 hover:text-ink-800'
+      }`}
+    >
+      {icon}
+      {label}
+      {badge != null && badge > 0 && (
+        <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-brick-500 text-paper-50 text-[10px] font-bold">
+          {badge}
+        </span>
+      )}
+    </Link>
+  );
+}
+
+export default function Header({ onAdd, memoryCount, activeNav = 'home', pendingCount = 0 }: Props) {
   return (
     <header className="relative pt-14 pb-8 md:pt-20 md:pb-12">
       <div className="container max-w-6xl">
@@ -22,7 +58,7 @@ export default function Header({ onAdd, memoryCount }: Props) {
             <p className="mt-3 font-hand text-lg md:text-xl text-ink-700/70 pl-1 relative z-10">
               封存每一缕难以忘怀的空气，把嗅觉变成可以翻阅的回忆
             </p>
-            <div className="mt-4 flex items-center gap-4 pl-1">
+            <div className="mt-4 flex flex-wrap items-center gap-3 pl-1">
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-paper-200/80 text-ink-700/80 text-sm border border-paper-300">
                 <span className="text-base">📚</span>
                 已封存 <b className="text-ochre-600 font-semibold">{memoryCount}</b> 段气味
@@ -33,15 +69,35 @@ export default function Header({ onAdd, memoryCount }: Props) {
               </span>
             </div>
           </div>
-          <button
-            onClick={onAdd}
-            className="group relative inline-flex items-center justify-center gap-2 bg-ochre-500 hover:bg-ochre-600 active:bg-ochre-700 text-paper-50 font-medium rounded-2xl px-6 py-3.5 shadow-paper hover:shadow-paper-hover hover:-translate-y-1 transition-all duration-250 self-start md:self-auto"
-          >
-            <span className="absolute inset-0 rounded-2xl opacity-20"
-              style={{ background: 'radial-gradient(circle at 20% 20%, #fff 0%, transparent 60%)' }} />
-            <Plus className="w-5 h-5 transition-transform duration-300 group-hover:rotate-90" strokeWidth={2.5} />
-            <span className="font-serif text-lg">封存一段气味</span>
-          </button>
+
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 self-start md:self-auto">
+            <nav className="flex items-center gap-1 p-1 rounded-2xl bg-paper-100 border border-paper-300 shadow-paper">
+              <NavTab
+                to="/"
+                active={activeNav === 'home'}
+                icon={<Archive className="w-4 h-4" />}
+                label="气味档案"
+              />
+              <NavTab
+                to="/review"
+                active={activeNav === 'review'}
+                icon={<FlaskConical className="w-4 h-4" />}
+                label="复嗅复核台"
+                badge={pendingCount}
+              />
+            </nav>
+            {onAdd && (
+              <button
+                onClick={onAdd}
+                className="group relative inline-flex items-center justify-center gap-2 bg-ochre-500 hover:bg-ochre-600 active:bg-ochre-700 text-paper-50 font-medium rounded-2xl px-6 py-3.5 shadow-paper hover:shadow-paper-hover hover:-translate-y-1 transition-all duration-250"
+              >
+                <span className="absolute inset-0 rounded-2xl opacity-20"
+                  style={{ background: 'radial-gradient(circle at 20% 20%, #fff 0%, transparent 60%)' }} />
+                <Plus className="w-5 h-5 transition-transform duration-300 group-hover:rotate-90" strokeWidth={2.5} />
+                <span className="font-serif text-lg">封存一段气味</span>
+              </button>
+            )}
+          </div>
         </div>
         <div className="mt-8 h-px w-full" style={{ background: 'linear-gradient(90deg, transparent 0%, #CBB993 20%, #CBB993 80%, transparent 100%)' }} />
       </div>

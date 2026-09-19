@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 import FilterPanel from '../components/FilterPanel';
 import VisualizationPanel from '../components/VisualizationPanel';
@@ -19,6 +20,7 @@ const defaultFilters: Filters = {
 
 export default function Home() {
   const { memories, initIfEmpty, addMemory, updateMemory, deleteMemory } = useMemoryStore();
+  const navigate = useNavigate();
   const [filters, setFilters] = useState<Filters>(defaultFilters);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -27,6 +29,11 @@ export default function Home() {
   useEffect(() => {
     initIfEmpty();
   }, [initIfEmpty]);
+
+  const pendingCount = useMemo(
+    () => memories.filter((m) => m.status === 'pending_review').length,
+    [memories],
+  );
 
   const filteredMemories = useMemo(
     () => filterMemories(memories, filters),
@@ -40,6 +47,7 @@ export default function Home() {
 
   const openAddModal = () => { setEditing(null); setModalOpen(true); };
   const openEditModal = (m: SmellMemory) => { setEditing(m); setModalOpen(true); };
+  const goReview = (id: string) => navigate(`/review?memory=${encodeURIComponent(id)}`);
 
   const handleSubmit = (data: MemoryInput) => {
     if (editing) {
@@ -68,7 +76,12 @@ export default function Home() {
 
   return (
     <div className="min-h-screen">
-      <Header onAdd={openAddModal} memoryCount={memories.length} />
+      <Header
+        onAdd={openAddModal}
+        memoryCount={memories.length}
+        activeNav="home"
+        pendingCount={pendingCount}
+      />
 
       <main className="container max-w-6xl pb-20">
         <FilterPanel
@@ -126,6 +139,7 @@ export default function Home() {
                     onToggle={() => setExpandedId(expandedId === m.id ? null : m.id)}
                     onEdit={() => openEditModal(m)}
                     onDelete={() => handleDelete(m.id)}
+                    onReview={() => goReview(m.id)}
                   />
                 </div>
               ))}
